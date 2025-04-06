@@ -7,16 +7,14 @@ from Draw import draw_3d
 from Sliders import opacity_sliders
 
 def main():
-    #raw_nrrd_path = r"C:\Users\emilk\Desktop\knee\Data\I.nrrd"
     raw_nrrd_path = input("Podaj ścieżkę do pliku z danymi radiologicznymi(I.nrrd):")
-    #seg_nrrd_path = r"C:\Users\emilk\Desktop\knee\Data\seg.nrrd"
     seg_nrrd_path = input("Podaj ścieżkę do pliku z danymi segmentacji(seg.nrrd):")
 
-#stworzenie obiektu czytającego zdjęcia
+#creating an object that reads photos
     my_raw_nrrd_reader = vtk.vtkNrrdReader()
     seg_nrrd_reader = vtk.vtkNrrdReader()
 
-#wczytanie zdjec
+#reading photos
     my_raw_nrrd_reader.SetFileName(raw_nrrd_path)
     raw_nrrd_reader = vtk.vtkImageFlip()
     raw_nrrd_reader.SetInputConnection(my_raw_nrrd_reader.GetOutputPort())
@@ -26,25 +24,25 @@ def main():
     seg_nrrd_reader.SetFileName(seg_nrrd_path)
     seg_nrrd_reader.Update()
 
-#ustawienie kolorów
+#setting colours
     colors = vtk.vtkNamedColors()
     colors.SetColor("BkgColor", [240, 200, 220, 255]) #RGB i przezroczystosc
     bwColors = bw_colors(raw_nrrd_reader)
     segColors = label_colors(seg_nrrd_reader)
 
-#Stworzenie renderera, okna i interaktora
+#Creating a renderer, window and interactor
     aRenderer = vtk.vtkRenderer()
     renWin = vtk.vtkRenderWindow()
-    renWin.AddRenderer(aRenderer) #dodanie renderera do okna
+    renWin.AddRenderer(aRenderer)
     iren = vtk.vtkRenderWindowInteractor()
     iren.SetRenderWindow(renWin)
     interactorStyle = vtk.vtkInteractorStyleTrackballCamera()
     iren.SetInteractorStyle(interactorStyle)
 
-    aRenderer.SetBackground(colors.GetColor3d("BkgColor")) #kolor tła
+    aRenderer.SetBackground(colors.GetColor3d("BkgColor"))
     renWin.SetSize(640, 480)
 
-#Obrys wielkości danych - czarny prostopadloscian
+#Data size outline - black cuboid
     outlineData = vtk.vtkOutlineFilter()
     outlineData.SetInputConnection(seg_nrrd_reader.GetOutputPort())
     outlineData.Update()
@@ -54,7 +52,7 @@ def main():
     outline.SetMapper(mapOutline)
     outline.GetProperty().SetColor(colors.GetColor3d("Black"))
 
-#plaszczyzny przekrojowe
+#Planes
     raw_sagittal, raw_axial, raw_coronal = draw_planes(raw_nrrd_reader, bwColors)
     seg_sagittal, seg_axial, seg_coronal = draw_planes(seg_nrrd_reader, segColors)
     seg_sagittal2, seg_axial2, seg_coronal2 = draw_planes(seg_nrrd_reader, segColors)
@@ -66,7 +64,7 @@ def main():
     seg_axial2.SetPosition(0, -2, 0)
     seg_coronal2.SetPosition(0, 0, -1)
 
-#tkanki 3d
+#3D tissues
     miesnie = draw_3d(seg_nrrd_reader,12,  12, 26, segColors)
     wiezadla = draw_3d(seg_nrrd_reader, 31, 31, 36, segColors)
     sciegna = draw_3d(seg_nrrd_reader, 41, 41, 49, segColors)
@@ -79,7 +77,7 @@ def main():
     chrzastka = draw_3d(seg_nrrd_reader, 83, 83, 87, segColors)
     kosci = draw_3d(seg_nrrd_reader,95,  95, 99, segColors)
 
-#zapisanie tkanek w słowniku
+#Saving tissues in a dictionary
     tkanki = {
         "mięśnie": miesnie,
         "więzadła": wiezadla,
@@ -94,10 +92,10 @@ def main():
         "kości": kosci
     }
 
-#stworzenie suwaków przezroczystości tkanek
+#Creating tissue transparency sliders
     sliders = opacity_sliders(aRenderer, iren, tkanki)
 
-#Dodanie aktorow do renderera
+#Adding actors to renderer
     aRenderer.AddActor(outline)
     aRenderer.AddActor(raw_sagittal)
     aRenderer.AddActor(raw_axial)
@@ -111,7 +109,7 @@ def main():
     for tkanka in tkanki.values():
         aRenderer.AddActor(tkanka)
 
-#Ustawienie kamery
+#Setting camera
     set_camera(aRenderer, renWin)
     aCamera = vtk.vtkCamera()
     aCamera.SetViewUp(0, 0, -1)
@@ -128,7 +126,7 @@ def main():
     aRenderer.ResetCamera()
     aRenderer.ResetCameraClippingRange()
 
-#interakcja z danymi
+#Interaction
     renWin.Render()
     iren.Initialize()
     iren.Start()
